@@ -1,4 +1,4 @@
-MQTT_BROKER = "192.168.99.6"
+MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
 
 HTTP_HOST = "0.0.0.0"
