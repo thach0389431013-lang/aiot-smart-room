@@ -1,0 +1,43 @@
+name: Deploy AIoT to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync source to project directory
+        run: |
+          rsync -av --delete \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude ".venv" \
+            --exclude "__pycache__" \
+            --exclude "*.pyc" \
+            --exclude "*.pt" \
+            --exclude "*.t7" \
+            ./ /home/quyt/aiot_system/
+
+      - name: Install Python dependencies
+        run: |
+          cd /home/quyt/aiot_system
+          /home/quyt/aiot_system/.venv/bin/python -m pip install --upgrade pip
+          /home/quyt/aiot_system/.venv/bin/pip install -r requirements.txt
+
+      - name: Restart AIoT services
+        run: |
+          sudo /bin/systemctl restart aiot-fusion.service
+          sudo /bin/systemctl restart aiot-web.service
+
+      - name: Check service status
+        run: |
+          sudo /bin/systemctl status aiot-fusion.service --no-pager
+          sudo /bin/systemctl status aiot-web.service --no-pager
