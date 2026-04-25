@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIoT Smart Room Monitoring Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">AI</div>
+        <div>
+          <h2>AIoT Room</h2>
+          <p>Monitoring Dashboard</p>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div class="side-title">System</div>
+        <div class="side-item">
+          <span>MQTT</span>
+          <span id="mqttBadge" class="badge status unknown">UNKNOWN</span>
+        </div>
+        <div class="side-item">
+          <span>Fusion Mode</span>
+          <span id="currentMode" class="mode-chip">mode_camera_motion</span>
+        </div>
+        <div class="side-item">
+          <span>Last update</span>
+          <span id="lastUpdate" class="muted">--</span>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div class="side-title">Quick Summary</div>
+        <div class="summary-mini">
+          <div class="mini-card">
+            <span class="mini-label">Camera</span>
+            <strong id="summaryCamera">idle</strong>
+          </div>
+          <div class="mini-card">
+            <span class="mini-label">Motion</span>
+            <strong id="summaryMotion">inactive</strong>
+          </div>
+          <div class="mini-card">
+            <span class="mini-label">Door</span>
+            <strong id="summaryDoor">unknown</strong>
+          </div>
+          <div class="mini-card">
+            <span class="mini-label">Alarm</span>
+            <strong id="summaryAlarm">idle</strong>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <h1>AIoT Smart Room Monitoring Dashboard</h1>
+          <p>Camera detection runs directly inside the web backend on Raspberry Pi</p>
+        </div>
+        <div class="topbar-right">
+          <span class="live-dot"></span>
+          <span class="live-text">LIVE</span>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <div class="camera-panel glass-card">
+          <div class="panel-header">
+            <div>
+              <h2>Live Camera + Detection</h2>
+              <p>Camera stream with person detection from the same backend process</p>
+            </div>
+            <span class="pill neutral">Pi Camera Service</span>
+          </div>
+          <div class="camera-frame-wrap">
+            <img id="liveCamera" src="/video_feed" alt="Live Camera Feed">
+          </div>
+        </div>
+
+        <div class="mode-panel glass-card">
+          <div class="panel-header">
+            <div>
+              <h2>Fusion Control</h2>
+              <p>Select the alarm logic mode</p>
+            </div>
+          </div>
+
+          <label class="field-label" for="fusionMode">Detection mode</label>
+          <select id="fusionMode" class="mode-select">
+            <option value="mode_camera_motion">Camera + Motion</option>
+            <option value="mode_full_3way">Camera + Motion + Door</option>
+            <option value="mode_motion_door">Motion + Door</option>
+            <option value="mode_camera_only">Camera Only</option>
+          </select>
+
+          <button onclick="setFusionMode()" class="primary-btn">Apply Mode</button>
+        </div>
+      </section>
+
+      <section class="status-grid">
+        <div class="status-card glass-card" id="cardVision">
+          <div class="card-top">
+            <div>
+              <div class="card-kicker">AI VISION</div>
+              <h3>Camera AI</h3>
+            </div>
+            <span id="visionDetected" class="pill idle">NO</span>
+          </div>
+
+          <div class="metric-list">
+            <div class="metric-row"><span>Confidence</span><strong id="visionConf">0.00</strong></div>
+            <div class="metric-row"><span>Track IDs</span><strong id="visionTrackIds">[]</strong></div>
+            <div class="metric-row"><span>Source</span><strong id="visionSource">--</strong></div>
+            <div class="metric-row"><span>Timestamp</span><strong id="visionTs">--</strong></div>
+          </div>
+        </div>
+
+        <div class="status-card glass-card" id="cardMotion">
+          <div class="card-top">
+            <div>
+              <div class="card-kicker">RADAR SENSOR</div>
+              <h3>Motion Sensor (HLK)</h3>
+            </div>
+            <span id="motionDetected" class="pill idle">NO</span>
+          </div>
+
+          <div class="metric-list">
+            <div class="metric-row"><span>Online</span><strong id="motionOnline">false</strong></div>
+            <div class="metric-row"><span>Timestamp</span><strong id="motionTs">--</strong></div>
+          </div>
+        </div>
+
+        <div class="status-card glass-card" id="cardDoor">
+          <div class="card-top">
+            <div>
+              <div class="card-kicker">MAGNETIC SENSOR</div>
+              <h3>Door Sensor</h3>
+            </div>
+            <span id="doorStatus" class="pill unknown">UNKNOWN</span>
+          </div>
+
+          <div class="metric-list">
+            <div class="metric-row"><span>Online</span><strong id="doorOnline">false</strong></div>
+            <div class="metric-row"><span>Timestamp</span><strong id="doorTs">--</strong></div>
+          </div>
+        </div>
+
+        <div class="status-card glass-card alarm-card" id="cardAlarm">
+          <div class="card-top">
+            <div>
+              <div class="card-kicker">FUSION RESULT</div>
+              <h3>Alarm Status</h3>
+            </div>
+            <span id="alarmActive" class="pill idle">OFF</span>
+          </div>
+
+          <div class="metric-list">
+            <div class="metric-row"><span>Mode</span><strong id="alarmMode">--</strong></div>
+            <div class="metric-row"><span>Reason.person</span><strong id="alarmReasonPerson">false</strong></div>
+            <div class="metric-row"><span>Reason.motion</span><strong id="alarmReasonMotion">false</strong></div>
+            <div class="metric-row"><span>Reason.door</span><strong id="alarmReasonDoor">false</strong></div>
+            <div class="metric-row"><span>Timestamp</span><strong id="alarmTs">--</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="log-section glass-card">
+        <div class="panel-header">
+          <div>
+            <h2>Realtime Event Log</h2>
+            <p>Latest MQTT events received by the dashboard</p>
+          </div>
+          <span class="muted">Latest 50 events</span>
+        </div>
+
+        <div class="log-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Topic</th>
+                <th>Payload</th>
+                <th>Mode</th>
+              </tr>
+            </thead>
+            <tbody id="logBody">
+              <tr><td colspan="4" class="muted">No logs yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

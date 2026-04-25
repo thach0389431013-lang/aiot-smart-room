@@ -1,0 +1,13 @@
+Flask==3.0.3
+paho-mqtt==2.1.0
+opencv-python==4.10.0.84
+numpy==1.26.4
+torch
+torchvision
+pandas
+matplotlib
+seaborn
+scipy
+pyyaml
+tqdm
+requests
